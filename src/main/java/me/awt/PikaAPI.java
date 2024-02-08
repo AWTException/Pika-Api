@@ -1,6 +1,7 @@
 package me.awt;
 
 import com.google.gson.*;
+import me.awt.enums.*;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -8,25 +9,24 @@ import java.net.URL;
 import java.util.ArrayList;
 
 public class PikaAPI {
-    public static enum Interval {weekly, yearly, monthly, total};
-    public static enum Mode {SOLO, DOUBLES, TRIPLES, QUADS, ALL_MODES};
-    public static enum Stat {played, BED_DESTROYED, FINAL_KILLS, HIGHEST_WIN_STREAK, wins, kills};
-    public static enum Gamemode {opfactions, bedwars, opprison, opskyblock, classicskyblock, survival, kitpvp, practice, skywars, lifesteal};
     //offset = Which position the leaderboard starts from. (For example, if offset is 5, the leaderboard starts from #6. If it's 0, the leaderboard starts from #1)
     //limit = Which position the leaderboard ends at. (For example, if the limit 10, it will show the top 10 players)
-    
-    
-    
-    
-    public static String getProfile(String playerName){
+
+    public static JsonObject getProfile(String playerName){
         StringBuilder sb = new StringBuilder();
         try {
             URL url = new URL("https://stats.pika-network.net/api/profile/" + playerName);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             
-            InputStream is = con.getInputStream();
+            int returnCode = con.getResponseCode();
+            if(returnCode != 200){
+                return JsonParser.parseString("{\n" +
+                        "  \"code\": "+returnCode+"\n" +
+                        "}").getAsJsonObject();
+            }
             
+            InputStream is = con.getInputStream();
             try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 
@@ -35,9 +35,9 @@ public class PikaAPI {
                 }
             }
         }catch (Exception e){}
-        return sb.toString();
+        return JsonParser.parseString(sb.toString()).getAsJsonObject();
     }
-    public static String getGamemodeStats(Gamemode gamemode, String playerName, Interval interval, Mode mode){
+    public static JsonObject getGamemodeStats(Gamemode gamemode, String playerName, Interval interval, Mode mode){
         StringBuilder sb = new StringBuilder();
         try {
             URL url = new URL("https://stats.pika-network.net/api/profile/" + playerName +"/leaderboard?type=" + gamemode.toString() +
@@ -45,8 +45,14 @@ public class PikaAPI {
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
             
+            int returnCode = con.getResponseCode();
+            if(returnCode != 200){
+                return JsonParser.parseString("{\n" +
+                        "  \"code\": "+returnCode+"\n" +
+                        "}").getAsJsonObject();
+            }
+    
             InputStream is = con.getInputStream();
-            
             try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 
@@ -55,18 +61,24 @@ public class PikaAPI {
                 }
             }
         }catch (Exception e){}
-        return sb.toString();
+        return JsonParser.parseString(sb.toString()).getAsJsonObject();
     }
-    public static String getLeaderBoardStats(Gamemode gamemode, String playerName, Interval interval, Mode mode, Stat stat, int offset, int limit){
+    public static JsonObject getLeaderBoardStats(Gamemode gamemode, Interval interval, Mode mode, Stat stat, int offset, int limit){
         StringBuilder sb = new StringBuilder();
         try {
             URL url = new URL("https://stats.pika-network.net/api/leaderboards?type="
                     +gamemode.toString()+"&stat="+stat.toString()+"&interval="+interval.toString()+"&mode="+mode.toString()+"&offset="+offset+"&limit=" + limit);
             HttpURLConnection con = (HttpURLConnection) url.openConnection();
             con.setRequestMethod("GET");
+    
+            int returnCode = con.getResponseCode();
+            if(returnCode != 200){
+                return JsonParser.parseString("{\n" +
+                        "  \"code\": "+returnCode+"\n" +
+                        "}").getAsJsonObject();
+            }
             
             InputStream is = con.getInputStream();
-            
             try (BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
                 String line;
                 
@@ -75,14 +87,14 @@ public class PikaAPI {
                 }
             }
         }catch (Exception e){}
-        return sb.toString();
+        return JsonParser.parseString(sb.toString()).getAsJsonObject();
     }
     
     
     
     
     
-    public static ArrayList<String> getStaffMembers(){
+    public static ArrayList<String> getStaffMembers(){//TODO: return player stats
         ArrayList<String> al = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         try {
@@ -142,7 +154,6 @@ public class PikaAPI {
                                         }
                                     }
                                     in+=2;
-                                    
                                     
                                     char[] chars = new char[memberPart.length() - in];
                                     memberPart.getChars(in, memberPart.length(), chars, 0);
